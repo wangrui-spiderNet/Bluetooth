@@ -62,7 +62,7 @@ public class BtClientActivity extends Activity implements BtBase.Listener, BtRec
 
     @Override
     public void foundDev(BluetoothDevice dev) {
-        mBtDevAdapter.add(dev);
+//        mBtDevAdapter.add(dev);
     }
 
     // 重新扫描
