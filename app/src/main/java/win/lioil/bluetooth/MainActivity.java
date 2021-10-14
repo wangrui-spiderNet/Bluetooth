@@ -3,6 +3,8 @@ package win.lioil.bluetooth;
 import android.Manifest;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -22,7 +24,9 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         // 检查蓝牙开关
-        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+//        BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        BluetoothAdapter  adapter = mBluetoothManager.getAdapter();
         if (adapter == null) {
             APP.toast("本机没有找到蓝牙硬件或驱动！", 0);
             finish();
