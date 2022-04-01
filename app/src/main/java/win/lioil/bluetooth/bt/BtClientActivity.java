@@ -16,8 +16,9 @@ import java.io.File;
 import win.lioil.bluetooth.APP;
 import win.lioil.bluetooth.R;
 import win.lioil.bluetooth.util.BtReceiver;
+import win.lioil.bluetooth.util.Utils;
 
-public class BtClientActivity extends Activity implements BtBase.Listener, BtReceiver.Listener, BtDevAdapter.Listener {
+public class BtClientActivity extends Activity implements BtBase.Listener, OnBluetoothAction, BtDevAdapter.Listener {
     private TextView mTips;
     private EditText mInputMsg;
     private EditText mInputFile;
@@ -60,11 +61,6 @@ public class BtClientActivity extends Activity implements BtBase.Listener, BtRec
         mTips.setText("正在连接...");
     }
 
-    @Override
-    public void foundDev(BluetoothDevice dev) {
-//        mBtDevAdapter.add(dev);
-    }
-
     // 重新扫描
     public void reScan(View view) {
         mBtDevAdapter.reScan();
@@ -76,7 +72,9 @@ public class BtClientActivity extends Activity implements BtBase.Listener, BtRec
             if (TextUtils.isEmpty(msg))
                 APP.toast("消息不能空", 0);
             else
-                mClient.sendMsg(msg);
+                mClient.sendBytes(Utils.hexStringToByteArray(msg));
+//                mClient.sendMsg(msg);
+
         } else
             APP.toast("没有连接", 0);
     }
@@ -113,5 +111,55 @@ public class BtClientActivity extends Activity implements BtBase.Listener, BtRec
                 break;
         }
         APP.toast(msg, 0);
+    }
+
+    @Override
+    public void onFoundDevice(BluetoothDevice device) {
+
+    }
+
+    @Override
+    public void onConnectSuccess(BluetoothDevice device) {
+
+    }
+
+    @Override
+    public void onMsgTimeOut(byte[] msg) {
+
+    }
+
+    @Override
+    public void onNewDeviceConnect(BluetoothDevice device) {
+
+    }
+
+    @Override
+    public void onStateChanged(BluetoothDevice device) {
+
+    }
+
+    @Override
+    public void onDisconnected(BluetoothDevice device) {
+
+    }
+
+    @Override
+    public void onConnectFailed(BluetoothDevice romoteDevice, String msg) {
+
+    }
+
+    @Override
+    public void onReceiveBytes(byte[] bytes) {
+
+    }
+
+    @Override
+    public void onSendBytes(byte[] bytes) {
+
+    }
+
+    @Override
+    public void onSocketFail() {
+
     }
 }

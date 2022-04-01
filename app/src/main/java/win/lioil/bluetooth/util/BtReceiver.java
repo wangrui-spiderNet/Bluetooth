@@ -10,14 +10,16 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
 
+import win.lioil.bluetooth.bt.OnBluetoothAction;
+
 /**
  * 监听蓝牙广播-各种状态
  */
 public class BtReceiver extends BroadcastReceiver {
     private static final String TAG = BtReceiver.class.getSimpleName();
-    private final Listener mListener;
+    private final OnBluetoothAction mListener;
 
-    public BtReceiver(Context cxt, Listener listener) {
+    public BtReceiver(Context cxt, OnBluetoothAction listener) {
         mListener = listener;
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);//蓝牙开关状态
@@ -58,7 +60,7 @@ public class BtReceiver extends BroadcastReceiver {
             case BluetoothDevice.ACTION_FOUND:
                 short rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MAX_VALUE);
                 Log.i(TAG, "EXTRA_RSSI:" + rssi);
-                mListener.foundDev(dev);
+                mListener.onFoundDevice(dev);
                 break;
             case BluetoothDevice.ACTION_PAIRING_REQUEST: //在系统弹出配对框之前，实现自动配对，取消系统配对框
                 /*try {
@@ -69,26 +71,28 @@ public class BtReceiver extends BroadcastReceiver {
                 }*/
                 break;
             case BluetoothDevice.ACTION_BOND_STATE_CHANGED:
-                Log.i(TAG, "BOND_STATE: " + intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, 0));
-                break;
-            case BluetoothDevice.ACTION_ACL_CONNECTED:
-                break;
-            case BluetoothDevice.ACTION_ACL_DISCONNECTED:
-                break;
-
             case BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED:
                 Log.i(TAG, "CONN_STATE: " + intent.getIntExtra(BluetoothAdapter.EXTRA_CONNECTION_STATE, 0));
-                break;
             case BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED:
                 Log.i(TAG, "CONN_STATE: " + intent.getIntExtra(BluetoothHeadset.EXTRA_STATE, 0));
-                break;
             case BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED:
                 Log.i(TAG, "CONN_STATE: " + intent.getIntExtra(BluetoothA2dp.EXTRA_STATE, 0));
+                Log.i(TAG, "BOND_STATE: " + intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, 0));
+
+                if (mListener != null)
+                    mListener.onStateChanged(dev);
                 break;
+            case BluetoothDevice.ACTION_ACL_CONNECTED:
+                if (mListener != null)
+                    mListener.onNewDeviceConnect(dev);
+                break;
+            case BluetoothDevice.ACTION_ACL_DISCONNECTED:
+                if (mListener != null)
+                    mListener.onDisconnected(dev);
+                break;
+
+
         }
     }
 
-    public interface Listener {
-        void foundDev(BluetoothDevice dev);
-    }
 }
