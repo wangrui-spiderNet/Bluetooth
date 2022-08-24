@@ -36,6 +36,9 @@ public class BtBase {
     /**
      * 循环读取对方数据(若没有数据，则阻塞等待)
      */
+    private long startTime;
+    private long endTime;
+
     void loopRead(BluetoothSocket socket) {
         mSocket = socket;
         try {
@@ -60,14 +63,21 @@ public class BtBase {
                         int r;
                         byte[] b = new byte[4 * 1024];
                         FileOutputStream out = new FileOutputStream(FILE_PATH + fileName);
-                        notifyUI(Listener.MSG, "正在接收文件(" + fileName + "),请稍后...");
+                        startTime = System.currentTimeMillis();
+                        notifyUI(Listener.MSG, startTime + " 正在接收文件(" + fileName + "),请稍后...");
                         while ((r = in.read(b)) != -1) {
                             out.write(b, 0, r);
                             len += r;
                             if (len >= fileLen)
                                 break;
                         }
-                        notifyUI(Listener.MSG, "文件接收完成(存放在:" + FILE_PATH + ")");
+
+                        File file = new File(FILE_PATH + fileName);
+
+                        endTime = System.currentTimeMillis();
+                        long timeLen = (endTime - startTime) / 1000;
+                        notifyUI(Listener.MSG, endTime + " 文件接收完成(文件大小:" + file.length() + "字节)用时" + timeLen + "秒，每秒"
+                                + (fileLen / (1024*timeLen)) + "K");
                         break;
                 }
             }

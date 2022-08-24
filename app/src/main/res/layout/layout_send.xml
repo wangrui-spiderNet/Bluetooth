@@ -27,6 +27,19 @@
         android:onClick="sendFile"
         android:text="sendFile" />
 
+    <EditText
+        android:id="@+id/etFilePath"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="请输入文件路径"
+        />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="sendFile"
+        android:text="sendFile" />
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent">

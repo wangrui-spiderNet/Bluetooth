@@ -27,4 +27,7 @@
         android:textSize="18sp" />
 
     <include layout="@layout/layout_send" />
+
+
+
 </LinearLayout>
