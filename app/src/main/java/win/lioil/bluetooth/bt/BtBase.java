@@ -3,16 +3,16 @@ package win.lioil.bluetooth.bt;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.os.Environment;
+import android.util.Log;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import win.lioil.bluetooth.APP;
-import win.lioil.bluetooth.util.Util;
+import win.lioil.bluetooth.util.BtUtil;
 
 /**
  * 客户端和服务端的基类，用于管理socket长连接
@@ -20,107 +20,113 @@ import win.lioil.bluetooth.util.Util;
 public class BtBase {
     static final UUID SPP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     private static final String FILE_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + "/bluetooth/";
-    private static final int FLAG_MSG = 0;  //消息标记
-    private static final int FLAG_FILE = 1; //文件标记
 
-    private BluetoothSocket mSocket;
-    private DataOutputStream mOut;
+    Map<Integer, BluetoothSocket> mSocketMap = new HashMap<>();
+    Map<Integer, DataOutputStream> mOutStreamMap = new HashMap<>();
+    Map<Integer, DataInputStream> mInStreamMap = new HashMap<>();
+
+    //    private DataOutputStream mOut;
     private Listener mListener;
-    private boolean isRead;
+    private boolean isRunning;
     private boolean isSending;
+    int mId = 0;
+    private final String TAG = "BtBase";
 
-    BtBase(Listener listener) {
+    BtBase(int id, Listener listener) {
         mListener = listener;
+        mId = id;
+        Log.e(TAG, "创建BtClient ID:" + id);
     }
 
     /**
      * 循环读取对方数据(若没有数据，则阻塞等待)
      */
-    void loopRead(BluetoothSocket socket) {
-        mSocket = socket;
+    void loopRead(int id) {
+        BluetoothSocket socket = mSocketMap.get(id);
+        Log.e(TAG, "使用Socket:" + id + socket);
+
         try {
-            if (!mSocket.isConnected())
-                mSocket.connect();
-            notifyUI(Listener.CONNECTED, mSocket.getRemoteDevice());
-            mOut = new DataOutputStream(mSocket.getOutputStream());
-            DataInputStream in = new DataInputStream(mSocket.getInputStream());
-            isRead = true;
-            while (isRead) { //死循环读取
-                switch (in.readInt()) {
-                    case FLAG_MSG: //读取短消息
-                        String msg = in.readUTF();
-                        notifyUI(Listener.MSG, "接收短消息：" + msg);
+            if (!socket.isConnected())
+                socket.connect();
+
+            notifyUI(Listener.CONNECTED, socket.getRemoteDevice());
+            DataOutputStream mOut = new DataOutputStream(socket.getOutputStream());
+            mOutStreamMap.put(id, mOut);
+            mInStreamMap.put(id, new DataInputStream(socket.getInputStream()));
+
+            isRunning = true;
+
+            while (isRunning) {
+                byte[] buffer = new byte[256];
+                byte[] result = new byte[0];
+
+                // 等待有数据
+                while (mInStreamMap.get(id).available() == 0) {
+//                    if (System.currentTimeMillis() < 0 || mSocket == null || !mSocket.isConnected()) {
+//                        notifyUI(BtStateListener.ON_SOCKET_CLOSE, null);
+//                        break;
+//                    }
+                }
+
+                while (isRunning) {//循环读取
+                    try {
+                        int num = mInStreamMap.get(id).read(buffer);
+//                            logD(TAG,"容许最大长度Transmit:" + socket.getMaxTransmitPacketSize());
+                        byte[] temp = new byte[result.length + num];
+                        System.arraycopy(result, 0, temp, 0, result.length);
+                        System.arraycopy(buffer, 0, temp, result.length, num);
+                        result = temp;
+
+                        notifyUI(Listener.MSG, id + "-返回消息:" + BtUtil.bytesToHexString(result));
+//                        Log.e(TAG, id + "-返回消息：" + BtUtil.bytesToHexString(result));
+
+                        if (mInStreamMap.get(id).available() == 0)
+                            break;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        Log.e(TAG, e.getMessage());
+//                        notifyErrorOnUI("1-" + e.getMessage());
                         break;
-                    case FLAG_FILE: //读取文件
-                        Util.mkdirs(FILE_PATH);
-                        String fileName = in.readUTF(); //文件名
-                        long fileLen = in.readLong(); //文件长度
-                        // 读取文件内容
-                        long len = 0;
-                        int r;
-                        byte[] b = new byte[4 * 1024];
-                        FileOutputStream out = new FileOutputStream(FILE_PATH + fileName);
-                        notifyUI(Listener.MSG, "正在接收文件(" + fileName + "),请稍后...");
-                        while ((r = in.read(b)) != -1) {
-                            out.write(b, 0, r);
-                            len += r;
-                            if (len >= fileLen)
-                                break;
-                        }
-                        notifyUI(Listener.MSG, "文件接收完成(存放在:" + FILE_PATH + ")");
-                        break;
+                    }
+                }
+
+                try {
+
+//                    if (result.length == 0) {
+//                        return;
+//                    }
+//
+//                    // 清空
+//                    result = new byte[0];
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    notifyUI(-1, "2-" + e.getMessage());
                 }
             }
+
         } catch (Throwable e) {
-            close();
+            close(id);
         }
     }
 
     /**
      * 发送短消息
      */
-    public void sendMsg(String msg) {
-        if (checkSend()) return;
+    public void sendMsg(int id, byte[] byteArray) {
+//        if (checkSend()) return;
         isSending = true;
         try {
-            mOut.writeInt(FLAG_MSG); //消息标记
-            mOut.writeUTF(msg);
-            mOut.flush();
-            notifyUI(Listener.MSG, "发送短消息：" + msg);
+            mOutStreamMap.get(id).write(byteArray);
+            mOutStreamMap.get(id).flush();
+//            notifyUI(Listener.MSG, id + "-发送消息：" + BtUtil.bytesToHexString(byteArray));
+
+            Log.e(TAG, "发送消息：" + BtUtil.bytesToHexString(byteArray));
+
         } catch (Throwable e) {
-            close();
+            Log.e(TAG, "异常消息：" + e.getMessage());
+            close(id);
         }
         isSending = false;
-    }
-
-    /**
-     * 发送文件
-     */
-    public void sendFile(final String filePath) {
-        if (checkSend()) return;
-        isSending = true;
-        Util.EXECUTOR.execute(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    FileInputStream in = new FileInputStream(filePath);
-                    File file = new File(filePath);
-                    mOut.writeInt(FLAG_FILE); //文件标记
-                    mOut.writeUTF(file.getName()); //文件名
-                    mOut.writeLong(file.length()); //文件长度
-                    int r;
-                    byte[] b = new byte[4 * 1024];
-                    notifyUI(Listener.MSG, "正在发送文件(" + filePath + "),请稍后...");
-                    while ((r = in.read(b)) != -1)
-                        mOut.write(b, 0, r);
-                    mOut.flush();
-                    notifyUI(Listener.MSG, "文件发送完成.");
-                } catch (Throwable e) {
-                    close();
-                }
-                isSending = false;
-            }
-        });
     }
 
     /**
@@ -133,10 +139,11 @@ public class BtBase {
     /**
      * 关闭Socket连接
      */
-    public void close() {
+    public void close(int id) {
         try {
-            isRead = false;
-            mSocket.close();
+            isRunning = false;
+            mSocketMap.get(id).close();
+            Log.e(TAG, "close:" + id);
             notifyUI(Listener.DISCONNECTED, null);
         } catch (Throwable e) {
             e.printStackTrace();
@@ -146,11 +153,11 @@ public class BtBase {
     /**
      * 当前设备与指定设备是否连接
      */
-    public boolean isConnected(BluetoothDevice dev) {
-        boolean connected = (mSocket != null && mSocket.isConnected());
+    public boolean isConnected(int id, BluetoothDevice dev) {
+        boolean connected = (mSocketMap.get(id) != null && mSocketMap.get(id).isConnected());
         if (dev == null)
             return connected;
-        return connected && mSocket.getRemoteDevice().equals(dev);
+        return connected && mSocketMap.get(id).getRemoteDevice().equals(dev);
     }
 
     // ============================================通知UI===========================================================

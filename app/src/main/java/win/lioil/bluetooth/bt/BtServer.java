@@ -3,6 +3,7 @@ package win.lioil.bluetooth.bt;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
+import android.util.Log;
 
 import win.lioil.bluetooth.util.Util;
 
@@ -13,8 +14,9 @@ public class BtServer extends BtBase {
     private static final String TAG = BtServer.class.getSimpleName();
     private BluetoothServerSocket mSSocket;
 
-    BtServer(Listener listener) {
-        super(listener);
+    BtServer(int id,Listener listener) {
+        super(id,listener);
+        Log.e("BtServer", "创建BtServer ID:" + id);
         listen();
     }
 
@@ -33,20 +35,20 @@ public class BtServer extends BtBase {
                     try {
                         BluetoothSocket socket = mSSocket.accept(); // 监听连接
                         mSSocket.close(); // 关闭监听，只连接一个设备
-                        loopRead(socket); // 循环读取
+//                        loopRead(socket); // 循环读取
                     } catch (Throwable e) {
-                        close();
+//                        close();
                     }
                 }
             });
         } catch (Throwable e) {
-            close();
+//            close();
         }
     }
 
     @Override
-    public void close() {
-        super.close();
+    public void close(int id) {
+        super.close(id);
         try {
             mSSocket.close();
         } catch (Throwable e) {

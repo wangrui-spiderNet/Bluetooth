@@ -3,29 +3,17 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:showIn="@layout/activity_btclient">
 
-    <EditText
-        android:id="@+id/input_msg"
+    <Button
+        android:id="@+id/btn_shake"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="请输入短消息" />
+        android:text="握手" />
 
     <Button
+        android:id="@+id/btn_verify"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:onClick="sendMsg"
-        android:text="sendMsg" />
-
-    <EditText
-        android:id="@+id/input_file"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="请输入文件路径(例如:/sdcard/1.txt)" />
-
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:onClick="sendFile"
-        android:text="sendFile" />
+        android:text="校验" />
 
     <ScrollView
         android:layout_width="match_parent"
